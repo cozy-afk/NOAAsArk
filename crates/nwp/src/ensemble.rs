@@ -31,7 +31,9 @@ impl EnsembleForecaster {
         Self::new(BiasCorrection::default())
     }
 
-    /// P(metric exceeds threshold) from ensemble members (Kelvin for temp).
+    /// P(metric exceeds threshold) from ensemble members.
+    /// Uses continuous distribution fitting (normal) instead of raw member counts,
+    /// which removes the severe sampling noise of n/N estimates.
     pub fn probability(&self, ensemble_values: &[f64], metric: &WeatherMetric) -> f64 {
         if ensemble_values.is_empty() {
             return 0.5;
@@ -49,11 +51,61 @@ impl EnsembleForecaster {
             WeatherMetric::WindSpeedMph { threshold } => *threshold,
         };
 
-        let exceed_count = converted.iter().filter(|&&v| v >= threshold).count();
-        let raw_prob = exceed_count as f64 / converted.len() as f64;
-        // Clamp away from 0/1 so the logit is finite.
-        let raw_clamped = raw_prob.clamp(0.01, 0.99);
-        self.apply_spread_correction(raw_clamped)
+        let dist = crate::distribution::EnsembleDistribution::fit(
+            &converted,
+            self.bias_correction.spread_factor,
+        );
+        dist.prob_exceed(threshold)
+    }
+
+    /// Fit (and return) the distribution used for probability, for regime/uncertainty callers.
+    pub fn fit_distribution(
+        &self,
+        ensemble_values: &[f64],
+        metric: &WeatherMetric,
+    ) -> crate::distribution::EnsembleDistribution {
+        if ensemble_values.is_empty() {
+            return crate::distribution::EnsembleDistribution::fit(
+                &[],
+                self.bias_correction.spread_factor,
+            );
+        }
+        let converted: Vec<f64> = ensemble_values
+            .iter()
+            .map(|&v| self.convert_and_correct(v, metric))
+            .collect();
+        crate::distribution::EnsembleDistribution::fit(
+            &converted,
+            self.bias_correction.spread_factor,
+        )
+    }
+    pub fn probability_with_uncertainty(
+        &self,
+        ensemble_values: &[f64],
+        metric: &WeatherMetric,
+    ) -> (f64, f64) {
+        if ensemble_values.is_empty() {
+            return (0.5, 1.0);
+        }
+        let converted: Vec<f64> = ensemble_values
+            .iter()
+            .map(|&v| self.convert_and_correct(v, metric))
+            .collect();
+        let threshold = match metric {
+            WeatherMetric::MaxTempF { threshold } => *threshold,
+            WeatherMetric::MinTempF { threshold } => *threshold,
+            WeatherMetric::PrecipitationIn { threshold } => *threshold,
+            WeatherMetric::SnowfallIn { threshold } => *threshold,
+            WeatherMetric::WindSpeedMph { threshold } => *threshold,
+        };
+        let dist = crate::distribution::EnsembleDistribution::fit(
+            &converted,
+            self.bias_correction.spread_factor,
+        );
+        (
+            dist.prob_exceed(threshold),
+            dist.probability_uncertainty(threshold),
+        )
     }
 
     fn convert_and_correct(&self, value: f64, metric: &WeatherMetric) -> f64 {
@@ -64,15 +116,5 @@ impl EnsembleForecaster {
             }
             _ => value - self.bias_correction.mean_bias,
         }
-    }
-
-    fn apply_spread_correction(&self, raw_prob: f64) -> f64 {
-        if self.bias_correction.spread_factor <= 0.0 {
-            return raw_prob;
-        }
-        let p = raw_prob.clamp(1e-6, 1.0 - 1e-6);
-        let logit = (p / (1.0 - p)).ln();
-        let corrected_logit = logit / self.bias_correction.spread_factor;
-        1.0 / (1.0 + (-corrected_logit).exp())
     }
 }

@@ -1,7 +1,6 @@
 use chrono::Utc;
-use noaas_ark_core::types::{ModelRunId, NwpModel, Signal, Side, TradeIntent, WeatherMarket};
+use noaas_ark_core::types::{ModelRunId, NwpModel, Side, Signal, TradeIntent, WeatherMarket};
 use noaas_ark_market::clob::OrderbookSnapshot;
-use noaas_ark_market::types::Side as MarketSide;
 use noaas_ark_nwp::ensemble::EnsembleForecaster;
 use uuid::Uuid;
 
@@ -62,18 +61,31 @@ impl SignalEngine {
         orderbook: &OrderbookSnapshot,
         model_run: ModelRunId,
     ) -> Option<Signal> {
-        let hours_to_resolution =
-            (market.resolution_time - Utc::now()).num_minutes() as f64 / 60.0;
+        let hours_to_resolution = (market.resolution_time - Utc::now()).num_minutes() as f64 / 60.0;
         if hours_to_resolution < self.config.min_hours_to_resolution {
             return None;
         }
 
-        let model_prob = self.forecaster.probability(ensemble_values, &market.metric);
+        let (model_prob, model_uncertainty) = self
+            .forecaster
+            .probability_with_uncertainty(ensemble_values, &market.metric);
+
+        let dist = self
+            .forecaster
+            .fit_distribution(ensemble_values, &market.metric);
+        let threshold = match &market.metric {
+            noaas_ark_core::types::WeatherMetric::MaxTempF { threshold } => *threshold,
+            noaas_ark_core::types::WeatherMetric::MinTempF { threshold } => *threshold,
+            noaas_ark_core::types::WeatherMetric::PrecipitationIn { threshold } => *threshold,
+            noaas_ark_core::types::WeatherMetric::SnowfallIn { threshold } => *threshold,
+            noaas_ark_core::types::WeatherMetric::WindSpeedMph { threshold } => *threshold,
+        };
+        let regime = crate::regime::ThresholdRegime::classify(&dist, threshold);
+        let min_edge_required = regime.min_edge_required().max(self.config.min_edge);
 
         let best_ask = orderbook.best_ask()?;
         let best_bid = orderbook.best_bid()?;
 
-        // YES edge vs NO edge (NO price implied from YES bid).
         let edge_yes = model_prob - best_ask;
         let edge_no = (1.0 - model_prob) - (1.0 - best_bid);
 
@@ -84,9 +96,8 @@ impl SignalEngine {
         } else {
             return None;
         };
-        let _ = MarketSide::Buy;
 
-        if edge < self.config.min_edge {
+        if edge < min_edge_required {
             return None;
         }
 
@@ -99,9 +110,11 @@ impl SignalEngine {
             id: Uuid::new_v4(),
             market: market.clone(),
             model_prob,
+            model_uncertainty,
             market_price: price,
             edge,
-            confidence: Self::compute_confidence(ensemble_values),
+            confidence: (1.0 - model_uncertainty).clamp(0.0, 1.0),
+            size_multiplier: regime.size_multiplier(),
             model_run,
             timestamp: Utc::now(),
         })
@@ -111,7 +124,8 @@ impl SignalEngine {
         let price = signal.market_price.max(0.01).min(0.99);
         let kelly = signal.edge / price;
         let fraction = (kelly * self.config.kelly_fraction).clamp(0.0, 1.0);
-        let size = (fraction * self.config.max_position_usdc).min(self.config.max_position_usdc);
+        let size = (fraction * self.config.max_position_usdc).min(self.config.max_position_usdc)
+            * signal.size_multiplier;
 
         TradeIntent {
             signal_id: signal.id,
@@ -121,19 +135,6 @@ impl SignalEngine {
             size: size.max(1.0),
             min_edge: self.config.min_edge,
         }
-    }
-
-    fn compute_confidence(ensemble_values: &[f64]) -> f64 {
-        if ensemble_values.is_empty() {
-            return 0.0;
-        }
-        let mean = ensemble_values.iter().sum::<f64>() / ensemble_values.len() as f64;
-        let variance = ensemble_values
-            .iter()
-            .map(|v| (v - mean).powi(2))
-            .sum::<f64>()
-            / ensemble_values.len() as f64;
-        (1.0 - (variance.sqrt() / 10.0)).clamp(0.0, 1.0)
     }
 }
 

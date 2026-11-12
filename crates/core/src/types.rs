@@ -42,9 +42,11 @@ pub struct Signal {
     pub id: Uuid,
     pub market: WeatherMarket,
     pub model_prob: f64,
+    pub model_uncertainty: f64,
     pub market_price: f64,
     pub edge: f64,
     pub confidence: f64,
+    pub size_multiplier: f64,
     pub model_run: ModelRunId,
     pub timestamp: DateTime<Utc>,
 }
