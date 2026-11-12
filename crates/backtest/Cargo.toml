@@ -1,0 +1,13 @@
+[package]
+name = "noaas-ark-backtest"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+noaas-ark-core = { path = "../core" }
+noaas-ark-market = { path = "../market" }
+noaas-ark-engine = { path = "../engine" }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

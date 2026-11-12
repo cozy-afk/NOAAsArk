@@ -1,0 +1,29 @@
+# config/production.toml - TEMPLATE, no secrets.
+# Copy to config/production.local.toml and fill in, or use env vars.
+# Never commit real keys.
+
+[engine]
+min_edge = 0.05
+min_edge_after_spread = 0.03
+max_position_usdc = 25.0
+kelly_fraction = 0.25
+min_hours_to_resolution = 3.0
+
+[risk]
+max_total_exposure = 200.0
+max_per_market = 50.0
+max_daily_loss = 75.0
+max_concurrent_positions = 8
+
+[clob]
+api_key = "your-api-key"
+api_secret = "your-api-secret"
+private_key = "your-polygon-wallet-key"
+
+[nwp]
+models = ["gfs", "ecmwf"]
+gfs_weight = 0.4
+ecmwf_weight = 0.6
+
+[calibration]
+bias_file = "data/calibration/bias_params.json"

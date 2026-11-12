@@ -1,0 +1,20 @@
+[package]
+name = "noaas-ark-bot"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "noaas-ark-bot"
+path = "src/main.rs"
+
+[dependencies]
+noaas-ark-core = { path = "../core" }
+noaas-ark-nwp = { path = "../nwp" }
+noaas-ark-market = { path = "../market" }
+noaas-ark-engine = { path = "../engine" }
+noaas-ark-execution = { path = "../execution" }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

@@ -1,0 +1,34 @@
+# Rust build artifacts
+/target/
+**/target/
+
+# Cargo lock for libs is fine to keep for a binary workspace; keep it.
+# Cargo.lock
+
+# Env and secrets - never commit
+.env
+.env.*
+*.env
+config/production.local.toml
+secrets/
+
+# Local data cache - never commit large data
+data/grib/*
+data/orderbooks/*
+!data/grib/.gitkeep
+!data/orderbooks/.gitkeep
+!data/calibration/.gitkeep
+artifacts/
+
+# wgrib2 temp files
+*.grb2
+*.grib2
+*.idx
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
