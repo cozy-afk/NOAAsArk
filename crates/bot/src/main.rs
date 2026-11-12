@@ -107,12 +107,7 @@ async fn run_cycle(
             }
         };
 
-        let signal = engine.evaluate(
-            market,
-            &ensemble_values,
-            &orderbook,
-            latest_run.clone(),
-        );
+        let signal = engine.evaluate(market, &ensemble_values, &orderbook, latest_run.clone());
         let signal = noaas_ark_engine::strategy::filter_signal(signal);
 
         if let Some(signal) = signal {

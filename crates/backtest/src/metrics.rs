@@ -5,8 +5,7 @@ pub fn sharpe(returns: &[f64]) -> f64 {
         return 0.0;
     }
     let mean = returns.iter().sum::<f64>() / returns.len() as f64;
-    let var =
-        returns.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / returns.len() as f64;
+    let var = returns.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / returns.len() as f64;
     if var <= 0.0 {
         return 0.0;
     }

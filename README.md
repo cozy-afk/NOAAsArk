@@ -21,6 +21,7 @@ fractional-Kelly sizing and hard risk limits.
 ```bash
 export PATH="$HOME/.cargo/bin:$PATH"
 cargo check --workspace
+cargo test --workspace
 cargo run -p noaas-ark-bot -- --dry-run
 ```
 

@@ -27,12 +27,13 @@ impl ClobAuth {
 
     /// Sign an order payload. v0.1: placeholder HMAC over the JSON body.
     /// Replace with the exact Polymarket CLOB signature scheme before live.
-    pub fn sign_order(
-        &self,
-        order: &super::clob::OrderRequest,
-    ) -> Result<String> {
+    pub fn sign_order(&self, order: &super::clob::OrderRequest) -> Result<String> {
         let body = serde_json::to_string(order)?;
-        Ok(format!("{}:{}", self.api_key, simple_hash(&body, &self.api_secret)))
+        Ok(format!(
+            "{}:{}",
+            self.api_key,
+            simple_hash(&body, &self.api_secret)
+        ))
     }
 
     pub fn is_configured(&self) -> bool {

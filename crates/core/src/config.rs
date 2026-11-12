@@ -97,8 +97,7 @@ impl BotConfig {
     pub fn load(path: impl AsRef<Path>) -> Result<Self> {
         let content = std::fs::read_to_string(&path)
             .with_context(|| format!("reading config {:?}", path.as_ref()))?;
-        let cfg: BotConfig =
-            toml::from_str(&content).with_context(|| "parsing TOML config")?;
+        let cfg: BotConfig = toml::from_str(&content).with_context(|| "parsing TOML config")?;
         Ok(cfg)
     }
 

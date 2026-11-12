@@ -37,8 +37,8 @@ impl Season {
     pub fn from_month(m: u32) -> Self {
         match m {
             12 | 1 | 2 => Season::Winter,
-            3 | 4 | 5 => Season::Spring,
-            6 | 7 | 8 => Season::Summer,
+            3..=5 => Season::Spring,
+            6..=8 => Season::Summer,
             _ => Season::Fall,
         }
     }

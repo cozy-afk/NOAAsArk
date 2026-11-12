@@ -121,7 +121,7 @@ impl SignalEngine {
     }
 
     pub fn size_trade(&self, signal: &Signal) -> TradeIntent {
-        let price = signal.market_price.max(0.01).min(0.99);
+        let price = signal.market_price.clamp(0.01, 0.99);
         let kelly = signal.edge / price;
         let fraction = (kelly * self.config.kelly_fraction).clamp(0.0, 1.0);
         let size = (fraction * self.config.max_position_usdc).min(self.config.max_position_usdc)

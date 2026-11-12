@@ -58,7 +58,10 @@ impl RiskManager {
         }
     }
 
-    pub fn can_trade(&self, intent: &noaas_ark_core::types::TradeIntent) -> Result<(), RiskViolation> {
+    pub fn can_trade(
+        &self,
+        intent: &noaas_ark_core::types::TradeIntent,
+    ) -> Result<(), RiskViolation> {
         if self.daily_pnl <= -self.config.max_daily_loss {
             return Err(RiskViolation::DailyLossLimit);
         }
@@ -97,7 +100,8 @@ impl RiskManager {
             size: filled_size,
             entry_time: Utc::now(),
         };
-        self.positions.insert(intent.market.condition_id.clone(), pos);
+        self.positions
+            .insert(intent.market.condition_id.clone(), pos);
     }
 
     pub fn record_pnl(&mut self, pnl: f64) {

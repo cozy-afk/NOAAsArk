@@ -32,15 +32,13 @@ impl MarketFeed {
         // Drain one message to confirm subscription, then hand off.
         // Full read loop lives with the caller in v0.2.
         tokio::spawn(async move {
-            while let Some(msg) = read.next().await {
+            if let Some(msg) = read.next().await {
                 match msg {
                     Ok(m) => {
                         info!(?m, "WS msg");
-                        break;
                     }
                     Err(e) => {
                         tracing::warn!(error = %e, "WS read error");
-                        break;
                     }
                 }
             }

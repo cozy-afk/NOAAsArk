@@ -29,16 +29,18 @@ pub struct PriceLevel {
 impl OrderbookSnapshot {
     /// Best bid = max over bids. Asks arrive descending, so never index [0].
     pub fn best_bid(&self) -> Option<f64> {
-        self.bids.iter().map(|l| l.price).fold(None, |a, b| {
-            Some(a.map_or(b, |x: f64| x.max(b)))
-        })
+        self.bids
+            .iter()
+            .map(|l| l.price)
+            .fold(None, |a, b| Some(a.map_or(b, |x: f64| x.max(b))))
     }
 
     /// Best ask = min over asks.
     pub fn best_ask(&self) -> Option<f64> {
-        self.asks.iter().map(|l| l.price).fold(None, |a, b| {
-            Some(a.map_or(b, |x: f64| x.min(b)))
-        })
+        self.asks
+            .iter()
+            .map(|l| l.price)
+            .fold(None, |a, b| Some(a.map_or(b, |x: f64| x.min(b))))
     }
 
     pub fn midpoint(&self) -> Option<f64> {
