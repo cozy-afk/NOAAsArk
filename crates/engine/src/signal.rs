@@ -79,6 +79,18 @@ impl SignalEngine {
             noaas_ark_core::types::WeatherMetric::PrecipitationIn { threshold } => *threshold,
             noaas_ark_core::types::WeatherMetric::SnowfallIn { threshold } => *threshold,
             noaas_ark_core::types::WeatherMetric::WindSpeedMph { threshold } => *threshold,
+            // Regime gating for brackets uses the bracket midpoint (or the single
+            // bounded edge for open-ended brackets). Approximate by design: regime
+            // only scales min_edge, the probability itself uses the full interval.
+            noaas_ark_core::types::WeatherMetric::MaxTempRangeF { low, high }
+            | noaas_ark_core::types::WeatherMetric::MinTempRangeF { low, high } => {
+                match (low, high) {
+                    (Some(l), Some(h)) => (l + h) / 2.0,
+                    (Some(l), None) => *l,
+                    (None, Some(h)) => *h,
+                    (None, None) => return None,
+                }
+            }
         };
         let regime = crate::regime::ThresholdRegime::classify(&dist, threshold);
         let min_edge_required = regime.min_edge_required().max(self.config.min_edge);

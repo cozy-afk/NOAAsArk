@@ -51,6 +51,19 @@ impl EnsembleDistribution {
         1.0 - standard_normal_cdf(z)
     }
 
+    /// P(low <= X <= high) under the fitted normal. A `None` side is unbounded.
+    pub fn prob_in_range(&self, low: Option<f64>, high: Option<f64>) -> f64 {
+        let cdf_high = match high {
+            Some(h) => standard_normal_cdf((h - self.mean) / self.std_dev),
+            None => 1.0,
+        };
+        let cdf_low = match low {
+            Some(l) => standard_normal_cdf((l - self.mean) / self.std_dev),
+            None => 0.0,
+        };
+        (cdf_high - cdf_low).clamp(0.0, 1.0)
+    }
+
     /// Standard error of the probability estimate (delta method).
     pub fn probability_uncertainty(&self, threshold: f64) -> f64 {
         if self.n_members == 0 {
@@ -69,6 +82,34 @@ impl EnsembleDistribution {
         let var_from_std = (d_prob_d_std * std_se).powi(2);
 
         (var_from_mean + var_from_std).sqrt()
+    }
+
+    /// Standard error of the P(low <= X <= high) estimate (delta method).
+    /// Same structure as `probability_uncertainty` with phi/z differences.
+    pub fn probability_uncertainty_range(&self, low: Option<f64>, high: Option<f64>) -> f64 {
+        if self.n_members == 0 {
+            return 1.0;
+        }
+        let phi = |z: f64| (-z * z / 2.0).exp() / (2.0 * std::f64::consts::PI).sqrt();
+        let (phi_h, z_h) = match high {
+            Some(h) => {
+                let z = (h - self.mean) / self.std_dev;
+                (phi(z), z)
+            }
+            None => (0.0, 0.0),
+        };
+        let (phi_l, z_l) = match low {
+            Some(l) => {
+                let z = (l - self.mean) / self.std_dev;
+                (phi(z), z)
+            }
+            None => (0.0, 0.0),
+        };
+        let d_prob_d_mean = (phi_h - phi_l) / self.std_dev;
+        let mean_se = self.std_dev / (self.n_members as f64).sqrt();
+        let d_prob_d_std = (z_h * phi_h - z_l * phi_l) / self.std_dev;
+        let std_se = self.std_dev / (2.0 * self.n_members as f64).sqrt();
+        ((d_prob_d_mean * mean_se).powi(2) + (d_prob_d_std * std_se).powi(2)).sqrt()
     }
 
     pub fn z_score(&self, threshold: f64) -> f64 {
@@ -127,5 +168,31 @@ mod tests {
         let d = EnsembleDistribution::fit(&[], 1.0);
         assert!(d.prob_exceed(90.0).is_finite());
         assert!((0.0..=1.0).contains(&d.prob_exceed(90.0)));
+    }
+
+    #[test]
+    fn range_covers_bracket_tiling() {
+        // Brackets "41 or below" / "42-43" tile at 41.5; probs must sum to ~1.
+        let vals: Vec<f64> = (0..31).map(|i| 40.0 + i as f64 * 0.2).collect();
+        let d = EnsembleDistribution::fit(&vals, 1.0);
+        let p_below = d.prob_in_range(None, Some(41.5));
+        let p_mid = d.prob_in_range(Some(41.5), Some(43.5));
+        let p_above = d.prob_in_range(Some(43.5), None);
+        let total = p_below + p_mid + p_above;
+        assert!(
+            (total - 1.0).abs() < 1e-9,
+            "tiled brackets sum to 1, got {total}"
+        );
+        assert!((0.0..=1.0).contains(&p_mid));
+    }
+
+    #[test]
+    fn range_uncertainty_finite() {
+        let vals: Vec<f64> = vec![40.0, 41.0, 42.0, 43.0, 44.0];
+        let d = EnsembleDistribution::fit(&vals, 1.0);
+        let u = d.probability_uncertainty_range(Some(41.5), Some(43.5));
+        assert!(u.is_finite() && u >= 0.0);
+        let u_open = d.probability_uncertainty_range(None, Some(41.5));
+        assert!(u_open.is_finite() && u_open >= 0.0);
     }
 }

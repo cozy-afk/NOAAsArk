@@ -49,6 +49,14 @@ impl EnsembleForecaster {
             WeatherMetric::PrecipitationIn { threshold } => *threshold,
             WeatherMetric::SnowfallIn { threshold } => *threshold,
             WeatherMetric::WindSpeedMph { threshold } => *threshold,
+            WeatherMetric::MaxTempRangeF { low, high }
+            | WeatherMetric::MinTempRangeF { low, high } => {
+                let dist = crate::distribution::EnsembleDistribution::fit(
+                    &converted,
+                    self.bias_correction.spread_factor,
+                );
+                return dist.prob_in_range(*low, *high);
+            }
         };
 
         let dist = crate::distribution::EnsembleDistribution::fit(
@@ -97,6 +105,17 @@ impl EnsembleForecaster {
             WeatherMetric::PrecipitationIn { threshold } => *threshold,
             WeatherMetric::SnowfallIn { threshold } => *threshold,
             WeatherMetric::WindSpeedMph { threshold } => *threshold,
+            WeatherMetric::MaxTempRangeF { low, high }
+            | WeatherMetric::MinTempRangeF { low, high } => {
+                let dist = crate::distribution::EnsembleDistribution::fit(
+                    &converted,
+                    self.bias_correction.spread_factor,
+                );
+                return (
+                    dist.prob_in_range(*low, *high),
+                    dist.probability_uncertainty_range(*low, *high),
+                );
+            }
         };
         let dist = crate::distribution::EnsembleDistribution::fit(
             &converted,
@@ -110,7 +129,10 @@ impl EnsembleForecaster {
 
     fn convert_and_correct(&self, value: f64, metric: &WeatherMetric) -> f64 {
         match metric {
-            WeatherMetric::MaxTempF { .. } | WeatherMetric::MinTempF { .. } => {
+            WeatherMetric::MaxTempF { .. }
+            | WeatherMetric::MinTempF { .. }
+            | WeatherMetric::MaxTempRangeF { .. }
+            | WeatherMetric::MinTempRangeF { .. } => {
                 let fahrenheit = (value - 273.15) * 9.0 / 5.0 + 32.0;
                 fahrenheit - self.bias_correction.mean_bias
             }

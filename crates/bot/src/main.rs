@@ -10,6 +10,7 @@ use noaas_ark_engine::signal::{EngineConfig, SignalEngine};
 use noaas_ark_execution::risk::{RiskConfig, RiskManager};
 use noaas_ark_market::auth::ClobAuth;
 use noaas_ark_market::clob::{ClobClient, OrderRequest};
+use noaas_ark_market::gamma::GammaClient;
 use noaas_ark_nwp::ensemble::{BiasCorrection, EnsembleForecaster};
 use noaas_ark_nwp::gfs::GfsEnsembleClient;
 
@@ -52,9 +53,12 @@ async fn main() -> Result<()> {
 
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(300));
 
+    let gamma_client = Arc::new(GammaClient::new());
+
     loop {
         interval.tick().await;
         if let Err(e) = run_cycle(
+            &gamma_client,
             &gfs_client,
             &clob_client,
             &signal_engine,
@@ -73,13 +77,14 @@ fn load_bias_or_default(path: &str) -> BiasCorrection {
 }
 
 async fn run_cycle(
+    gamma: &GammaClient,
     gfs: &GfsEnsembleClient,
     clob: &ClobClient,
     engine: &SignalEngine,
     risk: &RwLock<RiskManager>,
     dry_run: bool,
 ) -> Result<()> {
-    let markets = fetch_active_weather_markets().await?;
+    let markets = fetch_active_weather_markets(gamma).await?;
     info!(count = markets.len(), "Found active weather markets");
 
     let latest_run = determine_latest_model_run();
@@ -162,10 +167,10 @@ async fn run_cycle(
     Ok(())
 }
 
-/// v0.1: market discovery is a stub - wire Gamma API here.
-/// Returns empty so dry-run loops without credentials.
-async fn fetch_active_weather_markets() -> Result<Vec<WeatherMarket>> {
-    Ok(vec![])
+/// Live market discovery via Gamma (M1). Network failures propagate so the
+/// cycle logs an error instead of silently trading nothing.
+async fn fetch_active_weather_markets(gamma: &GammaClient) -> Result<Vec<WeatherMarket>> {
+    gamma.fetch_active_weather_markets().await
 }
 
 /// Latest GFS run fully available (~4h after init).

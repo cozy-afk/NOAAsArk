@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 noaas-ark-core = { path = "../core" }
+noaas-ark-nwp = { path = "../nwp" }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 reqwest = { workspace = true }

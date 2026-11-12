@@ -29,11 +29,33 @@ pub struct Station {
 /// What we're measuring
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WeatherMetric {
-    MaxTempF { threshold: f64 },
-    MinTempF { threshold: f64 },
-    PrecipitationIn { threshold: f64 },
-    SnowfallIn { threshold: f64 },
-    WindSpeedMph { threshold: f64 },
+    MaxTempF {
+        threshold: f64,
+    },
+    MinTempF {
+        threshold: f64,
+    },
+    PrecipitationIn {
+        threshold: f64,
+    },
+    SnowfallIn {
+        threshold: f64,
+    },
+    WindSpeedMph {
+        threshold: f64,
+    },
+    /// A Polymarket temperature bracket: P(low <= T <= high) in degF.
+    /// `None` on a side means unbounded (e.g. "41F or below" -> low=None).
+    /// Bounds are continuous edges (half-degree adjusted at parse time),
+    /// not the integer labels from the question text.
+    MaxTempRangeF {
+        low: Option<f64>,
+        high: Option<f64>,
+    },
+    MinTempRangeF {
+        low: Option<f64>,
+        high: Option<f64>,
+    },
 }
 
 /// A signal from our engine

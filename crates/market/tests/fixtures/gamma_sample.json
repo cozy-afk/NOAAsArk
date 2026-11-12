@@ -1,0 +1,140 @@
+[
+  {
+    "id": "1001",
+    "title": "Highest temperature in NYC on November 13?",
+    "slug": "highest-temperature-in-nyc-on-november-13-2030",
+    "markets": [
+      {
+        "id": "2001",
+        "question": "Will the highest temperature in New York City be 41\u00b0F or below on November 13?",
+        "conditionId": "0xaaa111",
+        "outcomes": "[\"Yes\", \"No\"]",
+        "outcomePrices": "[\"0.2\", \"0.8\"]",
+        "clobTokenIds": "[\"1001\", \"1002\"]",
+        "endDate": "2030-11-13T12:00:00Z",
+        "active": true,
+        "closed": false
+      },
+      {
+        "id": "2002",
+        "question": "Will the highest temperature in New York City be between 42-43\u00b0F on November 13?",
+        "conditionId": "0xbbb222",
+        "outcomes": "[\"Yes\", \"No\"]",
+        "outcomePrices": "[\"0.3\", \"0.7\"]",
+        "clobTokenIds": "[\"1003\", \"1004\"]",
+        "endDate": "2030-11-13T12:00:00Z",
+        "active": true,
+        "closed": false
+      },
+      {
+        "id": "2003",
+        "question": "Will the highest temperature in New York City be 58\u00b0F or above on November 13?",
+        "conditionId": "0xccc333",
+        "outcomes": "[\"No\", \"Yes\"]",
+        "outcomePrices": "[\"0.9\", \"0.1\"]",
+        "clobTokenIds": "[\"1005\", \"1006\"]",
+        "endDate": "2030-11-13T12:00:00Z",
+        "active": true,
+        "closed": false
+      },
+      {
+        "id": "2004",
+        "question": "Will the highest temperature in New York City be between 44-45\u00b0F on November 13?",
+        "conditionId": "0xddd444",
+        "outcomes": "[\"Yes\", \"No\"]",
+        "outcomePrices": "[\"0.25\", \"0.75\"]",
+        "clobTokenIds": "[\"1007\", \"1008\"]",
+        "endDate": "2030-11-13T12:00:00Z",
+        "active": true,
+        "closed": true
+      }
+    ]
+  },
+  {
+    "id": "1002",
+    "title": "Lowest temperature in Chicago on November 12?",
+    "slug": "lowest-temperature-in-chicago-on-november-12-2030",
+    "markets": [
+      {
+        "id": "2005",
+        "question": "Will the lowest temperature in Chicago be between 28-29\u00b0F on November 12?",
+        "conditionId": "0xeee555",
+        "outcomes": "[\"Yes\", \"No\"]",
+        "outcomePrices": "[\"0.4\", \"0.6\"]",
+        "clobTokenIds": "[\"2001\", \"2002\"]",
+        "endDate": "2030-11-12T12:00:00Z",
+        "active": true,
+        "closed": false
+      },
+      {
+        "id": "2006",
+        "question": "Will it rain in Chicago on November 12?",
+        "conditionId": "0xfff666",
+        "outcomes": "[\"Yes\", \"No\"]",
+        "outcomePrices": "[\"0.5\", \"0.5\"]",
+        "clobTokenIds": "[\"2003\", \"2004\"]",
+        "endDate": "2030-11-12T12:00:00Z",
+        "active": true,
+        "closed": false
+      }
+    ]
+  },
+  {
+    "id": "1003",
+    "title": "Highest temperature in Jinan on May 20?",
+    "slug": "highest-temperature-in-jinan-on-may-20",
+    "markets": [
+      {
+        "id": "2007",
+        "question": "Will the highest temperature in Jinan be 30\u00b0F or above on May 20?",
+        "conditionId": "0xggg777",
+        "outcomes": "[\"Yes\", \"No\"]",
+        "outcomePrices": "[\"0.5\", \"0.5\"]",
+        "clobTokenIds": "[\"3001\", \"3002\"]",
+        "endDate": "2030-05-20T12:00:00Z",
+        "active": true,
+        "closed": false
+      },
+      {
+        "id": "2008",
+        "question": "Will the highest temperature in Tokyo be between 50-51\u00b0F on May 20?",
+        "conditionId": "0xhhh888",
+        "outcomes": "[\"Yes\", \"No\"]",
+        "outcomePrices": "[\"0.5\", \"0.5\"]",
+        "clobTokenIds": "[\"3003\", \"3004\"]",
+        "endDate": "2020-05-20T12:00:00Z",
+        "active": true,
+        "closed": false
+      }
+    ]
+  },
+  {
+    "id": "1004",
+    "title": "Lowest temperature in London on November 13?",
+    "slug": "lowest-temperature-in-london-on-november-13-2030",
+    "markets": [
+      {
+        "id": "2009",
+        "question": "Will the lowest temperature in London be 2°C on November 13?",
+        "conditionId": "0xiii999",
+        "outcomes": "[\"Yes\", \"No\"]",
+        "outcomePrices": "[\"0.4\", \"0.6\"]",
+        "clobTokenIds": "[\"4001\", \"4002\"]",
+        "endDate": "2030-11-13T12:00:00Z",
+        "active": true,
+        "closed": false
+      },
+      {
+        "id": "2010",
+        "question": "Will the highest temperature in London be 11°C or higher on November 13?",
+        "conditionId": "0xjjj000",
+        "outcomes": "[\"Yes\", \"No\"]",
+        "outcomePrices": "[\"0.1\", \"0.9\"]",
+        "clobTokenIds": "[\"4003\", \"4004\"]",
+        "endDate": "2030-11-13T12:00:00Z",
+        "active": true,
+        "closed": false
+      }
+    ]
+  }
+]
