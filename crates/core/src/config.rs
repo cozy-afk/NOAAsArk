@@ -40,7 +40,11 @@ pub struct ClobConfig {
     #[serde(default)]
     pub api_secret: String,
     #[serde(default)]
+    pub api_passphrase: String,
+    #[serde(default)]
     pub private_key: String,
+    #[serde(default)]
+    pub wallet_address: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
