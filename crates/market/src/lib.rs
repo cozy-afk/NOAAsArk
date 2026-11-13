@@ -8,7 +8,8 @@ pub mod websocket;
 
 pub use auth::ClobAuth;
 pub use clob::{
-    parse_book, ClobClient, OrderRequest, OrderResponse, OrderbookSnapshot, PriceLevel,
+    parse_book, save_snapshot, ClobClient, OrderRequest, OrderResponse, OrderbookSnapshot,
+    PriceLevel,
 };
 pub use gamma::{markets_from_events_json, DiscoveryStats, GammaClient, DISCOVERY_TAG, GAMMA_BASE};
 pub use types::{MarketStatus, Side};

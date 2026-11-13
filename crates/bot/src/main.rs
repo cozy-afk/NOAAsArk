@@ -22,6 +22,11 @@ async fn main() -> Result<()> {
 
     let args: Vec<String> = std::env::args().collect();
     let dry_run = args.iter().any(|a| a == "--dry-run");
+    let markets_limit = args
+        .iter()
+        .position(|a| a == "--markets-limit")
+        .and_then(|i| args.get(i + 1))
+        .and_then(|v| v.parse::<usize>().ok());
     let config_path = args
         .iter()
         .position(|a| a == "--config")
@@ -64,6 +69,7 @@ async fn main() -> Result<()> {
             &signal_engine,
             &risk_manager,
             dry_run,
+            markets_limit,
         )
         .await
         {
@@ -83,9 +89,13 @@ async fn run_cycle(
     engine: &SignalEngine,
     risk: &RwLock<RiskManager>,
     dry_run: bool,
+    markets_limit: Option<usize>,
 ) -> Result<()> {
-    let markets = fetch_active_weather_markets(gamma).await?;
+    let mut markets = fetch_active_weather_markets(gamma).await?;
     info!(count = markets.len(), "Found active weather markets");
+    if let Some(n) = markets_limit {
+        markets.truncate(n);
+    }
 
     let latest_run = determine_latest_model_run();
     info!(init_time = %latest_run.init_time, "Using model run");
@@ -112,6 +122,14 @@ async fn run_cycle(
             }
         };
 
+        if dry_run {
+            let date = chrono::Utc::now().format("%Y-%m-%d").to_string();
+            let path = std::path::Path::new("data/orderbooks").join(format!("{}.jsonl", date));
+            if let Err(e) = noaas_ark_market::save_snapshot(&path, &orderbook) {
+                warn!(error = %e, "snapshot save failed");
+            }
+        }
+
         let signal = engine.evaluate(market, &ensemble_values, &orderbook, latest_run.clone());
         let signal = noaas_ark_engine::strategy::filter_signal(signal);
 
@@ -119,25 +137,34 @@ async fn run_cycle(
             info!(
                 market = %market.question,
                 model_prob = %signal.model_prob,
+                model_uncertainty = %signal.model_uncertainty,
                 market_price = %signal.market_price,
                 edge = %signal.edge,
+                confidence = %signal.confidence,
                 "Signal generated"
             );
 
             let intent = engine.size_trade(&signal);
 
-            {
+            let risk_verdict = {
                 let risk_mgr = risk.read().await;
-                if let Err(violation) = risk_mgr.can_trade(&intent) {
-                    warn!(violation = %violation, "Trade blocked by risk manager");
-                    continue;
+                match risk_mgr.can_trade(&intent) {
+                    Ok(()) => "allowed",
+                    Err(v) => {
+                        warn!(violation = %v, "Trade blocked by risk manager");
+                        "blocked"
+                    }
                 }
+            };
+            if risk_verdict == "blocked" {
+                continue;
             }
 
             if dry_run {
                 info!(
                     price = %intent.price,
                     size = %intent.size,
+                    risk = risk_verdict,
                     "DRY RUN - would place order"
                 );
                 continue;

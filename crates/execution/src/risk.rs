@@ -93,15 +93,30 @@ impl RiskManager {
         fill_price: f64,
         filled_size: f64,
     ) {
-        let pos = Position {
-            market_id: intent.market.condition_id.clone(),
-            side: intent.side,
-            entry_price: fill_price,
-            size: filled_size,
-            entry_time: Utc::now(),
-        };
-        self.positions
-            .insert(intent.market.condition_id.clone(), pos);
+        if filled_size <= 0.0 {
+            return;
+        }
+        let key = intent.market.condition_id.clone();
+        if let Some(existing) = self.positions.get_mut(&key) {
+            // Accumulate: weighted-average entry price, sum sizes.
+            let total_size = existing.size + filled_size;
+            if total_size > 0.0 {
+                existing.entry_price =
+                    (existing.entry_price * existing.size + fill_price * filled_size) / total_size;
+            }
+            existing.size = total_size;
+            existing.side = intent.side;
+            existing.entry_time = Utc::now();
+        } else {
+            let pos = Position {
+                market_id: key.clone(),
+                side: intent.side,
+                entry_price: fill_price,
+                size: filled_size,
+                entry_time: Utc::now(),
+            };
+            self.positions.insert(key, pos);
+        }
     }
 
     pub fn record_pnl(&mut self, pnl: f64) {
@@ -111,6 +126,70 @@ impl RiskManager {
             self.daily_reset = now;
         }
         self.daily_pnl += pnl;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+    use noaas_ark_core::types::{TradeIntent, WeatherMarket, WeatherMetric};
+
+    fn market() -> WeatherMarket {
+        WeatherMarket {
+            condition_id: "m1".into(),
+            question: "q".into(),
+            token_id_yes: "y".into(),
+            token_id_no: "n".into(),
+            station: noaas_ark_core::types::Station {
+                id: "K".into(),
+                name: "K".into(),
+                lat: 0.0,
+                lon: 0.0,
+                elevation_m: 0.0,
+            },
+            metric: WeatherMetric::MaxTempF { threshold: 90.0 },
+            event_time: Utc::now(),
+            resolution_time: Utc::now(),
+            resolved_outcome: None,
+        }
+    }
+
+    fn intent() -> TradeIntent {
+        TradeIntent {
+            signal_id: uuid::Uuid::new_v4(),
+            market: market(),
+            side: Side::Buy,
+            price: 0.5,
+            size: 10.0,
+            min_edge: 0.05,
+        }
+    }
+
+    #[test]
+    fn add_position_accumulates() {
+        let mut rm = RiskManager::new(RiskConfig::default());
+        let i = intent();
+        rm.add_position(&i, 0.5, 10.0);
+        rm.add_position(&i, 0.6, 10.0);
+        let p = rm.positions.get("m1").unwrap();
+        assert!((p.size - 20.0).abs() < 1e-9);
+        assert!((p.entry_price - 0.55).abs() < 1e-9);
+    }
+
+    #[test]
+    fn add_position_ignores_zero_fill() {
+        let mut rm = RiskManager::new(RiskConfig::default());
+        let i = intent();
+        rm.add_position(&i, 0.5, 0.0);
+        assert!(rm.positions.is_empty());
+    }
+
+    #[test]
+    fn record_pnl_resets_daily() {
+        let mut rm = RiskManager::new(RiskConfig::default());
+        rm.record_pnl(-10.0);
+        assert!((rm.daily_pnl + 10.0).abs() < 1e-9);
     }
 }
 

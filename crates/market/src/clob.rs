@@ -227,6 +227,20 @@ pub fn parse_book(json: &str, token_id: &str) -> Result<OrderbookSnapshot> {
         timestamp: ts,
     })
 }
+/// Append a snapshot as one JSON line to `path` (creates parent dirs).
+pub fn save_snapshot(path: &std::path::Path, snapshot: &OrderbookSnapshot) -> Result<()> {
+    use std::io::Write;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).ok();
+    }
+    let line = serde_json::to_string(snapshot)?;
+    let mut f = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?;
+    writeln!(f, "{}", line)?;
+    Ok(())
+}
 impl ClobClient {
     pub fn new(auth: super::auth::ClobAuth) -> Self {
         Self {
